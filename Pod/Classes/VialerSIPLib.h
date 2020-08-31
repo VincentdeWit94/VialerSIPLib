@@ -126,6 +126,13 @@ typedef NS_ENUM(NSUInteger, VialerSIPLibErrors) {
 @property (readonly, nonatomic) NSString * _Nullable sipProxy;
 
 /**
+ *  The contact uri params
+ *
+ *  @return NSString with extra contact uri parameters.
+ */
+@property (readonly, nonatomic) NSString * _Nonnull contactUriParams;
+
+/**
  * Control the use of STUN for the SIP signaling.
  *
  * Default: PJSUA_STUN_USE_DEFAULT

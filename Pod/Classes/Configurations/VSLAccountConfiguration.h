@@ -102,6 +102,11 @@ typedef NS_ENUM(NSUInteger, VSLContactRewriteMethod) {
 @property (strong, nonatomic) NSString * _Nonnull sipAuthScheme;
 
 /**
+ *  The additional contact uri parameters
+ */
+@property (strong, nonatomic) NSString * _Nonnull contactUriParams;
+
+/**
  *  If YES the account will be registered when added to the endpoint.
  *
  *  Default: NO

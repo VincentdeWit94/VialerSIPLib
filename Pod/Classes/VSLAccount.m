@@ -129,6 +129,10 @@ static NSString * const VSLAccountErrorDomain = @"VialerSIPLib.VSLAccount";
         acc_cfg.proxy_cnt = 1;
         acc_cfg.proxy[0] = [[accountConfiguration.sipProxyServer stringByAppendingString:transportString] prependSipUri].pjString;
     }
+
+    if (accountConfiguration.contactUriParams) {
+        acc_cfg.contact_uri_params = accountConfiguration.contactUriParams.pjString;
+    }
     
     acc_cfg.sip_stun_use = accountConfiguration.sipStunType;
     acc_cfg.media_stun_use = accountConfiguration.mediaStunType;

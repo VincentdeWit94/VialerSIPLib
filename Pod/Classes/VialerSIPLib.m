@@ -146,6 +146,10 @@ NSString * const VSLNotificationUserInfoErrorStatusMessageKey = @"VSLNotificatio
             accountConfiguration.allowContactRewrite = sipUser.allowContactRewrite;
         }
 
+        if ([sipUser respondsToSelector:@selector(contactUriParams)]) {
+            accountConfiguration.contactUriParams = sipUser.contactUriParams;
+        }
+
         account = [[VSLAccount alloc] initWithCallManager:self.callManager];
  
         NSError *accountConfigError = nil;
