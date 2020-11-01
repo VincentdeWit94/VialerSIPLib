@@ -648,10 +648,30 @@ static void onRegStarted2(pjsua_acc_id acc_id, pjsua_reg_info *info) {
  */
 static void onRegState2(pjsua_acc_id acc_id, pjsua_reg_info *info) {
     VSLLogVerbose(@"PJSUA callback: registration status has changed.");
+    
+    // NSString *regc = [NSString stringWithPJString:info->cbparam->contact];
 
     VSLAccount *account = [[VSLEndpoint sharedEndpoint] lookupAccount:acc_id];
     if (account) {
         [account accountStateChanged];
+        
+        for (VSLAccount *account in [VSLEndpoint sharedEndpoint].accounts) {
+            pjsip_transport *transport = info->cbparam->rdata->tp_info.transport;
+            NSString *infoStr = [NSString stringWithFormat:@"%s", transport->info];
+            int isIPv6 = transport->factory->type == PJSIP_TRANSPORT_IPV6 || [infoStr containsString:@"::"];
+            VSLLogVerbose(@"onRegState2 - isIPv6: %i", isIPv6);
+            VSLLogVerbose(@"onRegState2 - infoStr: %@", infoStr);
+
+            pjsua_acc_config cfg_update;
+            pj_pool_t *pool = pjsua_pool_create("tmp-pjsua", 1000, 1000);
+            pjsua_acc_config_default(&cfg_update);
+            pjsua_acc_get_config((int)account.accountId, pool, &cfg_update);
+
+            cfg_update.ipv6_media_use = isIPv6 ? PJSUA_IPV6_ENABLED : PJSUA_IPV6_DISABLED;
+            cfg_update.nat64_opt = isIPv6 ? PJSUA_NAT64_ENABLED : PJSUA_NAT64_DISABLED;
+
+            pjsua_acc_modify((int)account.accountId, &cfg_update);
+        }
     }
 
     if ([VSLEndpoint sharedEndpoint].ipChangeInProgress) {
@@ -714,9 +734,10 @@ static void onCallMediaEvent(pjsua_call_id call_id, unsigned med_idx, pjmedia_ev
  */
 static void onTxStateChange(pjsua_call_id call_id, pjsip_transaction *tx, pjsip_event *event) {
     VSLLogVerbose(@"PJSUA callback: transaction within the call has changed state.");
+    
     pjsua_call_info callInfo;
     pjsua_call_get_info(call_id, &callInfo);
-
+    
     // When a call is in de early state it is possible to check if
     // the call has been completed elsewhere or if the original caller
     // has ended the call.
@@ -980,7 +1001,23 @@ static void onIpChangeProgress(pjsua_ip_change_op op, pj_status_t status, const 
 static void onTransportStateChanged(pjsip_transport *tp, pjsip_transport_state state, const pjsip_transport_state_info *info) {
     VSLLogVerbose(@"Transport state changed to: %@", VSLTransportStateName(state));
     
+    for (VSLAccount *account in [VSLEndpoint sharedEndpoint].accounts) {
+        int isIPv6 = tp->factory->type == PJSIP_TRANSPORT_IPV6;
+        VSLLogVerbose(@"isIPv6: %i", isIPv6);
+        
+        pjsua_acc_config cfg_update;
+        pj_pool_t *pool = pjsua_pool_create("tmp-pjsua", 1000, 1000);
+        pjsua_acc_config_default(&cfg_update);
+        pjsua_acc_get_config((int)account.accountId, pool, &cfg_update);
+
+        cfg_update.ipv6_media_use = isIPv6 ? PJSUA_IPV6_ENABLED : PJSUA_IPV6_DISABLED;
+        cfg_update.nat64_opt = isIPv6 ? PJSUA_NAT64_ENABLED : PJSUA_NAT64_DISABLED;
+
+        pjsua_acc_modify((int)account.accountId, &cfg_update);
+    }
+    
     if ([[VSLEndpoint sharedEndpoint].endpointConfiguration hasTLSConfiguration] || [[VSLEndpoint sharedEndpoint].endpointConfiguration hasTCPConfiguration]) {
+        
         VSLCallManager *callManager = [VSLEndpoint sharedEndpoint].callManager;
         for (VSLAccount *account in [VSLEndpoint sharedEndpoint].accounts) {
             VSLCall *call = [callManager firstCallForAccount:account];
